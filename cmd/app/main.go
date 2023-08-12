@@ -2,18 +2,15 @@ package main
 
 import (
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 )
-
-// Handler
-func hello(c echo.Context) error {
-	return c.String(http.StatusOK, "Hello, World!")
-}
 
 func main() {
 	// Echo instance
@@ -42,8 +39,37 @@ func main() {
 
 	// Routes
 	e.GET("/", hello)
+	e.GET("/test", test)
+	e.GET("/randomerr", randomErr)
 	e.GET("/metrics", echoprometheus.NewHandler())
 
 	// Start server
 	e.Logger.Fatal(e.Start(":8080"))
+}
+
+// Handlers
+func hello(c echo.Context) error {
+	return c.String(http.StatusOK, "Hello, World!")
+}
+
+func test(c echo.Context) error {
+	//Add random delay to simulate a slow request
+	time.Sleep(time.Duration(100+rand.Intn(2000)) * time.Millisecond)
+
+	return c.String(http.StatusOK, "Test is ok!")
+}
+
+func randomErr(c echo.Context) error {
+	time.Sleep(time.Duration(100+rand.Intn(900)) * time.Millisecond)
+
+	shouldFail := rand.Intn(100)
+	if shouldFail < 20 {
+		return c.String(http.StatusInternalServerError, "Internal Server Error")
+	} else if shouldFail < 50 {
+		return c.String(http.StatusBadGateway, "Bad Gateway")
+	} else if shouldFail < 70 {
+		return c.String(http.StatusServiceUnavailable, "Service Unavailable")
+	}
+
+	return c.String(http.StatusOK, "Random error?? no error!")
 }
