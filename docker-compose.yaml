@@ -1,0 +1,35 @@
+# This docker compose contains the following services:
+# - app
+# - prometheus
+# - alertmanager
+# - grafana
+
+services:
+  app:
+    build: .
+    ports:
+      - 8080:8080
+    environment:
+      - PROMETHEUS_URL=http://prometheus:9090
+    depends_on:
+      - prometheus
+      - grafana
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./monitor/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  alertmanager:
+    image: prom/alertmanager
+    ports:
+      - 9093:9093
+    volumes:
+      - ./monitor/config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - ./monitor/config/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./monitor/config/grafana/provisioning:/etc/grafana/provisioning
