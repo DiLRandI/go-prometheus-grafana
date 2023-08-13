@@ -7,8 +7,8 @@ build-image: build
 generate-data:
 	GOGC=off go run cmd/util/util.go
 
-up: build-image
-	docker-compose up -d
+up: build
+	docker-compose up --build -d
 
 down:
 	docker-compose down

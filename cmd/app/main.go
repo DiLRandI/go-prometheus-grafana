@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -12,20 +11,33 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func main() {
-	// Echo instance
-	e := echo.New()
-
-	// Custom metric
-	customCounter := prometheus.NewCounter( // create new counter metric. This is replacement for `prometheus.Metric` struct
+var (
+	customCounter = prometheus.NewCounter( // create new counter metric. This is replacement for `prometheus.Metric` struct
 		prometheus.CounterOpts{
 			Name: "custom_requests_total",
 			Help: "How many HTTP requests processed, partitioned by status code and HTTP method.",
 		},
 	)
-	if err := prometheus.Register(customCounter); err != nil { // register your new counter metric with default metrics registry
-		log.Fatal(err)
-	}
+
+	customHistogram = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "custom_requests_duration_seconds",
+			Help:    "How long it took to process the request, partitioned by status code and HTTP method.",
+			Buckets: prometheus.DefBuckets,
+		},
+	)
+)
+
+func main() {
+	// Echo instance
+	e := echo.New()
+
+	// Custom metric
+	// prometheus.MustRegister(customHistogram)
+	prometheus.MustRegister(customCounter)
+
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(customHistogram)
 
 	// Middleware
 	e.Use(middleware.Logger())
@@ -35,6 +47,7 @@ func main() {
 		AfterNext: func(c echo.Context, err error) {
 			customCounter.Inc() // use our custom metric in middleware. after every request increment the counter
 		},
+		Registerer: reg,
 	}))
 
 	// Routes
@@ -53,6 +66,10 @@ func hello(c echo.Context) error {
 }
 
 func test(c echo.Context) error {
+	now := time.Now()
+	defer func() {
+		customHistogram.Observe(time.Since(now).Seconds()) // use our custom metric in handler. after every request observe the duration
+	}()
 	//Add random delay to simulate a slow request
 	time.Sleep(time.Duration(100+rand.Intn(2000)) * time.Millisecond)
 
