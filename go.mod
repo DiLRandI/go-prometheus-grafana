@@ -1,6 +1,6 @@
 module github.com/DiLRandI/go-prometheus-grafana
 
-go 1.19
+go 1.21.0
 
 require (
 	github.com/labstack/echo-contrib v0.15.0
