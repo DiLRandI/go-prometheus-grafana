@@ -33,11 +33,10 @@ func main() {
 	e := echo.New()
 
 	// Custom metric
-	// prometheus.MustRegister(customHistogram)
-	prometheus.MustRegister(customCounter)
 
-	reg := prometheus.NewRegistry()
-	reg.MustRegister(customHistogram)
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(customCounter)
+	registry.MustRegister(customHistogram)
 
 	// Middleware
 	e.Use(middleware.Logger())
@@ -47,14 +46,16 @@ func main() {
 		AfterNext: func(c echo.Context, err error) {
 			customCounter.Inc() // use our custom metric in middleware. after every request increment the counter
 		},
-		Registerer: reg,
+		Registerer: registry,
 	}))
 
 	// Routes
 	e.GET("/", hello)
 	e.GET("/test", test)
 	e.GET("/randomerr", randomErr)
-	e.GET("/metrics", echoprometheus.NewHandler())
+	e.GET("/metrics", echoprometheus.NewHandlerWithConfig(echoprometheus.HandlerConfig{
+		Gatherer: registry,
+	}))
 
 	// Start server
 	e.Logger.Fatal(e.Start(":8080"))
@@ -62,21 +63,29 @@ func main() {
 
 // Handlers
 func hello(c echo.Context) error {
+	timer := prometheus.NewTimer(customHistogram)
+	defer func() {
+		timer.ObserveDuration()
+	}()
 	return c.String(http.StatusOK, "Hello, World!")
 }
 
 func test(c echo.Context) error {
-	now := time.Now()
+	timer := prometheus.NewTimer(customHistogram)
 	defer func() {
-		customHistogram.Observe(time.Since(now).Seconds()) // use our custom metric in handler. after every request observe the duration
+		timer.ObserveDuration()
 	}()
-	//Add random delay to simulate a slow request
+
 	time.Sleep(time.Duration(100+rand.Intn(2000)) * time.Millisecond)
 
 	return c.String(http.StatusOK, "Test is ok!")
 }
 
 func randomErr(c echo.Context) error {
+	timer := prometheus.NewTimer(customHistogram)
+	defer func() {
+		timer.ObserveDuration()
+	}()
 	time.Sleep(time.Duration(100+rand.Intn(900)) * time.Millisecond)
 
 	shouldFail := rand.Intn(100)
