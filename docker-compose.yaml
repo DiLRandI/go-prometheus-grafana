@@ -3,6 +3,7 @@
 # - prometheus
 # - alertmanager
 # - grafana
+# - pushgateway
 
 services:
   app:
@@ -33,3 +34,7 @@ services:
     volumes:
       - ./monitor/config/grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./monitor/config/grafana/provisioning:/etc/grafana/provisioning
+  pushgateway:
+    image: prom/pushgateway
+    ports:
+      - 9091:9091
