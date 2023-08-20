@@ -30,6 +30,7 @@ type Employment struct {
 // new prometheus register
 var (
 	prometheusRegister = prometheus.NewRegistry()
+	pusher             *push.Pusher
 )
 
 // metrics
@@ -80,13 +81,13 @@ func init() {
 	prometheusRegister.MustRegister(metricActualNumberOfGoroutines)
 	prometheusRegister.MustRegister(metricNumberOfGC)
 	prometheusRegister.MustRegister(metricAllocatedMemory)
+
+	pusher = push.New("http://localhost:9091", "util").Gatherer(prometheusRegister)
 }
 
 func main() {
-	// metric pusher
-	pusher := push.New("http://localhost:9091", "util").Gatherer(prometheusRegister)
 	defer func() {
-		if err := pusher.Push(); err != nil {
+		if err := pusher.Add(); err != nil {
 			log.Fatal(err)
 		}
 	}()
@@ -160,7 +161,6 @@ func PrintMemUsage(ctx context.Context) {
 			log.Printf("TotalAlloc = %v MiB", memStats.TotalAlloc/1024/1024)
 			log.Printf("Sys = %v MiB", memStats.Sys/1024/1024)
 			log.Printf("NumGC = %v\n", memStats.NumGC)
-
 		case <-ctx.Done():
 			log.Println("Context cancelled, stop printing memory usage")
 			return
