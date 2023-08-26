@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"os"
 
-	"github.com/DiLRandI/go-prometheus-grafana/pkg/model"
+	"github.com/DiLRandI/go-prometheus-grafana/app/model"
 )
 
 func generateRandomAddress() model.Address {
