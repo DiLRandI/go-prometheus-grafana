@@ -7,7 +7,10 @@ build-image: build
 generate-data:
 	GOGC=off go run cmd/util/util.go
 
-up: build
+generate-company-data:
+	go run cmd/company-util/main.go
+
+up: build generate-company-data
 	docker-compose up --build -d
 
 down:
