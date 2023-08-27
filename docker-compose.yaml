@@ -3,6 +3,7 @@
 # - prometheus
 # - alertmanager
 # - grafana
+# - pushgateway
 
 services:
   app:
@@ -30,6 +31,13 @@ services:
     image: grafana/grafana
     ports:
       - 3000:3000
+    environment:
+      - GF_LOG_LEVEL=debug
     volumes:
       - ./monitor/config/grafana/grafana.ini:/etc/grafana/grafana.ini
       - ./monitor/config/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitor/config/grafana/dashboards:/etc/grafana/dashboards
+  pushgateway:
+    image: prom/pushgateway
+    ports:
+      - 9091:9091
